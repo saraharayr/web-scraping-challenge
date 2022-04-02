@@ -16,18 +16,18 @@ def scrape():
     browser.visit(url)
 
     html = browser.html
-    news_soup = soup(html, 'html.parser')
+    news_soup = soup(html, "html.parser")
 
-    slide_elem = news_soup.select_one('div.list_text')
+    slide_elem = news_soup.select_one("div.list_text")
 
-    slide_elem.find('div', class_='content_title')
+    slide_elem.find("div", class_="content_title")
 
     # Collect latest News Title
-    news_title = slide_elem.find('div', class_='content_title').get_text()
+    news_title = slide_elem.find("div", class_="content_title").get_text()
     news_title
 
     # Collect News Title's paragraph text
-    news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
+    news_p = slide_elem.find("div", class_="article_teaser_body").get_text()
     news_p
 
     # Identify featured images 
@@ -103,5 +103,3 @@ def scrape():
         "hemispheres": hemis_imgs_urls
     }
     return data
-
-
