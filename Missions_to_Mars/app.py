@@ -13,8 +13,7 @@ mongo = PyMongo(app)
 mars_data = mongo.db.mars_data
 # mars_data.drop()
 
-# Render the index.html page with any craigslist listings in our database.
-# If there are no listings, the table will be empty.
+# Render the index.html page.
 @app.route("/")
 def index():
     mars_info = mars_data.find_one()

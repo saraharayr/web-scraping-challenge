@@ -4,12 +4,15 @@ from bs4 import BeautifulSoup as soup
 import pandas as pd
 from webdriver_manager.chrome import ChromeDriverManager
 
+def init_browser():
+    # @NOTE: Replace the path with your actual path to the chromedriver
+    
+    executable_path = {"executable_path": "/usr/local/bin/chromedriver"}
+    return Browser("chrome", **executable_path, headless=True)
 
-def scrape():
+def scrape_all():   
 
-    # initialise splinter and set executable path
-    executable_path = {"executable_path": ChromeDriverManager().install()}
-    browser = Browser("chrome", **executable_path, headless=False)
+    browser = init_browser()
 
     # visit Mars News Site
     url= "https://redplanetscience.com/"
@@ -23,7 +26,7 @@ def scrape():
     slide_elem.find("div", class_="content_title")
 
     # Collect latest News Title
-    news_title = slide_elem.find("div", class_="content_title").get_text()
+    news_title = slide_elem.find("div", class_="content_title").g_text()
     news_title
 
     # Collect News Title's paragraph text
@@ -95,11 +98,22 @@ def scrape():
 
     browser.quit
 
-    data = {
+    print("Mars Hemisphere Images: Scraping Complete!") 
+    
+    # *****************************************************************************************************************************
+    #  Store all values in dictionary
+    # *****************************************************************************************************************************
+    
+    scraped_data = {
         "news_title": news_title,
         "news_p": news_p,
         "featured_imaged": featured_img_url,
         "facts":  df.to_html(),
         "hemispheres": hemis_imgs_urls
     }
-    return data
+    return scraped_data
+    
+    
+print(scraped_data)
+  
+
