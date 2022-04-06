@@ -1,119 +1,96 @@
-# Import Splinter, BeautifulSoup, and Pandas
+# Dependencies
 from splinter import Browser
-from bs4 import BeautifulSoup as soup
+from bs4 import BeautifulSoup as bs
 import pandas as pd
+import time
 from webdriver_manager.chrome import ChromeDriverManager
 
-def init_browser():
-    # @NOTE: Replace the path with your actual path to the chromedriver
+def scrape_info():
+    # Set up Splinter
+    executable_path = {"executable_path": ChromeDriverManager().install()}
+    browser = Browser("chrome", **executable_path, headless=False)
     
-    executable_path = {"executable_path": "/usr/local/bin/chromedriver"}
-    return Browser("chrome", **executable_path, headless=True)
-
-def scrape_all():   
-
-    browser = init_browser()
-
-    # visit Mars News Site
-    url= "https://redplanetscience.com/"
+    # visit the Mars News Site
+    url = "https://redplanetscience.com/"
     browser.visit(url)
 
+    # Scrape page into Soup
     html = browser.html
-    news_soup = soup(html, "html.parser")
+    soup = bs(html, "html.parser")
 
-    slide_elem = news_soup.select_one("div.list_text")
-
-    slide_elem.find("div", class_="content_title")
-
-    # Collect latest News Title
-    news_title = slide_elem.find("div", class_="content_title").g_text()
-    news_title
-
-    # Collect News Title's paragraph text
-    news_p = slide_elem.find("div", class_="article_teaser_body").get_text()
-    news_p
+    #  Collect latest News Title & Paragraph
+    news_title = soup.find_all("div", class_="content_title")[0].get_text
+    news_p = soup.find_all("div", class_="article_teaser_body")[0].get_text
 
     # Identify featured images 
-    url = "https://spaceimages-mars.com/"
+    url = 'https://spaceimages-mars.com/'
     browser.visit(url)
-
-    # Find and click the full image button
-    full_image_elem = browser.find_by_tag("button")[1]
-    full_image_elem.click()
 
     # Use soup to parse the resulting html
     html = browser.html
-    img_soup = soup(html, "html.parser")
-    img_soup
+    soup = bs(html, "html.parser")
 
-    # Find the relative image url
-    img_url1 = img_soup.find("img", class_= "fancybox-image").get("src")
-    img_url1
-
-    # Use the base URL to create an absolute URL
-    featured_img_url = f"https://www.jpl.nasa.gov{img_url1}"
-    featured_img_url
+    img_src = soup.find_all("img")[1]["src"]
+    # Combine base url with image source to get images url
+    featured_img_url = url + img_src
 
     # Visit the Mars Facts webpage and use Pandas to scrape the table containing facts about the planet 
+    url = "https://galaxyfacts-mars.com/"
 
-    df = pd.read_html("https://galaxyfacts-mars.com/")[0]
-    df.head()
+    # Pandas 
+    table = pd.read_html(url)
+    # Cleaning the table
+    df = table[0]
+    df2 = df.set_index(keys=0)
+    df2.index.name=None
+    df2.columns = [''] * len(df2.columns)
+    # Dataframe to html
+    html_table = df2.to_html(header=False)
+    # Cleaning the table
+    html_table = html_table.replace('\n', '')
+    # Saving html to a file
+    df2.to_html("table.html")
 
-    df.columns=["Description", "Mars", "Earth"]
-    df.set_index("Description", inplace=True)
-    df
-
-    # Use Pandas to convert the data to a HTML table string
-    df.to_html()
-
-    # Scrape High-Resolution Mars’ Hemisphere Images and Titles
-
-    # initialise splinter and set executable path
-    executable_path = {"executable_path": ChromeDriverManager().install()}
-    browser = Browser("chrome", **executable_path, headless=False)
-
-    # visit URL with browser
-
-    # Use browser to visit the URL 
+    # Scrape High-Resolution Mars’ Hemisphere Images and Title,
+    #Visit URl
     url = "https://marshemispheres.com/"
     browser.visit(url)
 
-    # Create a list that holds the images' titles and URLs
-    hemis_imgs_urls = []
-
+    # Create a list that holds the images, titles and URLs
+    hemis_img_urls = []
     # Retrieve url's and titles for each hemisphere
-    for i in range(4):
-        #create empty dictionary
-        hemispheres = {}
-        browser.find_by_css("a.product-item h3")[i].click()
-        element = browser.links.find_by_text("Sample").first
-        img_url = element['href']
-        title = browser.find_by_css("h2.title").text
-        hemispheres["img_url"] = img_url
-        hemispheres["title"] = title
-        hemis_imgs_urls.append(hemispheres)
-        browser.back()
+    for x in range (0,4):
+        time.sleep(1)
+        ####################################
+        html = browser.html
+        soup = bs(html, "html.parser")
+        href = soup.find_all("h3")[x].text
+        browser.links.find_by_partial_text(href).click()
+        html = browser.html
+        soup = bs(html, "html.parser")
+        img_url = soup.find_all("img", class_="wide-image")[0]["src"]
+        full_url = url + img_url
+        title = soup.find_all("h2", class_="title")[0].text
+        dictionaries = {"title": title, "img_url": full_url}
+        hemis_img_urls.append(dictionaries)
+        back = soup.find_all("h3")[1].text
+        browser.links.find_by_partial_text(back).click()
 
-    hemis_imgs_urls
-
-    browser.quit
-
-    print("Mars Hemisphere Images: Scraping Complete!") 
-    
-    # *****************************************************************************************************************************
     #  Store all values in dictionary
-    # *****************************************************************************************************************************
-    
-    scraped_data = {
+    mars_data = {
         "news_title": news_title,
         "news_p": news_p,
-        "featured_imaged": featured_img_url,
-        "facts":  df.to_html(),
-        "hemispheres": hemis_imgs_urls
-    }
-    return scraped_data
-    
-    
-print(scraped_data)
-  
+        "featured_image_url": featured_img_url,
+        "html_table": html_table,
+        "hemisphere_image_urls": hemis_img_urls
+        }
 
+    # Close the browser after scraping
+    browser.quit()
+
+    # Return results
+    return mars_data
+
+if __name__ == "__main__":
+
+    print(scrape_info())
